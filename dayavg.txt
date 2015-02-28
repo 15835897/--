@@ -1,0 +1,55 @@
+//------------------------------------------------------------------------
+// 简称: dayAvg
+// 名称: dayAvg
+// 类别: 公式应用
+// 类型: 用户应用
+// 输出:
+//------------------------------------------------------------------------
+     
+Params   
+	Numeric AmplitudeLeng(60); 
+	Numeric MaLeng(16);  
+
+Vars 
+	Numeric Amplitude;
+	Numeric ma;
+ 
+	string strkey;
+    string strValue;
+	string maValue;
+	
+	Numeric t1;
+Begin
+
+	//以下两种方式好像是一样的，但是有些时候计算结果有偏差，哪个对？
+	Amplitude=Average ( High - Low , AmplitudeLeng);
+	t1 =  AvgTrueRange(AmplitudeLeng);
+
+    strKey = DateToString(Date);
+    //strValue = Text(Amplitude);
+	strValue = Text(t1);
+    SetTBProfileString("Amplitude",strKey,strValue);
+	
+	
+	//FileAppend("c:\\bb.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"strValue:"+strValue);
+	//FileAppend("c:\\bb.log","t1="+Text(t1));
+ //	FileAppend("c:\\data_day_avg_amp.log",Text(Year)+" "+Text(Month)+" "+Text(Day)+" amp:"+Text(t1));
+
+	ma= Average(Close, MaLeng);
+
+	maValue=Text(ma);
+	SetTBProfileString("Ma",strKey,maValue);
+	
+	//FileAppend("c:\\bb.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"maValue:"+maValue);
+
+    PlotNumeric("平均振幅",Amplitude) ;
+End
+
+
+//------------------------------------------------------------------------
+// 编译版本	GS2010.12.08
+// 用户版本	2015-02-11 07:49:47
+// 版权所有	q51394712
+// 更改声明	TradeBlazer Software保留对TradeBlazer平台
+//			每一版本的TrabeBlazer公式修改和重写的权利
+//------------------------------------------------------------------------
