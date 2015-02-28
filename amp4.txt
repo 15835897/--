@@ -86,17 +86,18 @@ Begin
             SetGlobalVar(1,1);
         }
     }
-     	 
+     	  
     If(MarketPosition==1) 
     {
         If(Close<EntryPrice*(1-lose/100) or Time>0.1455 or  Close>EntryPrice*(1+win/100))
         {
 			//时间尚早，反向开仓
-			If(Time<reverse/100 and Close<EntryPrice*(1-lose/100))
+			If(Time<reverse/100 and Close<EntryPrice*(1-lose/100) )//and GetGlobalVar(1)==1)
 			{
-				SellShort(CurrentContracts,0);
+				SellShort(1,0);
+				SetGlobalVar(1,2);
 			}
-			else
+			else //If(Time>reverse/100)
 			{
 				Sell(CurrentContracts,0);
 				SetGlobalVar(1,10);
@@ -108,11 +109,12 @@ Begin
         If(Close>EntryPrice*(1+lose/100) or Time>0.1455 or Close<EntryPrice*(1-win/100))
         {
 			//时间尚早，反向开仓
-			If(Time<reverse/100 and Close>EntryPrice*(1+lose/100))
+			If(Time<reverse/100 and Close>EntryPrice*(1+lose/100) )//and GetGlobalVar(1)==1)
 			{
-				Buy(CurrentContracts,0);
+				Buy(1,0);
+				SetGlobalVar(1,2);
 			}
-			else
+			else// If(Time>reverse/100)
 			{		
 				BuyToCover(0-CurrentContracts,0);
 				SetGlobalVar(1,10);
