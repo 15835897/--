@@ -1,0 +1,148 @@
+//最佳，赚10万
+Params
+    Numeric win(1.6);
+    Numeric lose(0.2);
+	Numeric coffee(0.3);  
+	Numeric reverse(10.06);//反仓截止时间
+	
+    Numeric stoptime(14); //终止开仓时间
+	Numeric starttime(9.1); //开始开仓时间
+	//Numeric add(10.30);//加仓截止时间
+
+Vars
+    NumericSeries amp(0); 
+    NumericSeries ma(0);
+    Numeric highbar(0);
+    Numeric lowbar(99999); 
+    StringSeries strKey;
+    Numeric i(0); 
+    Numeric isup(0); 
+    NumericSeries iAmplitude;
+    String avgAmplitude;  
+
+Begin 
+	// SetGlobalVar(1,0);
+	// 1: 首次开仓
+	// 2: 加仓 
+
+	// 10 :已平仓，当日不再交易，结束
+      
+    If(Date!=Date[1] or BarStatus==0)
+    {
+        strKey = DateToString(Date[1]);
+        SetGlobalVar(1,0);
+		Return;
+    }Else
+    {
+        strKey = strKey[1];
+    }
+	If(GetGlobalVar(1)==10)
+	{
+		Return;
+	}
+	/*
+
+	*/
+    amp=HighD(0)-LowD(0); 
+    isup=CloseD(0) - OpenD(0);
+
+    avgAmplitude = GetTBProfileString("Amplitude",strKey);
+    If(avgAmplitude != InvalidString)
+    {
+        iAmplitude = Value(avgAmplitude);
+    }Else
+    {
+        iAmplitude = iAmplitude[1]; 
+    } 
+	
+	
+	PlotNumeric("amp", amp);
+    PlotNumeric("avg amp", iAmplitude);
+
+	If(BarStatus!=2)
+	{
+		FileAppend("c:\\trade.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"BarStatus!=2");
+
+		Return;
+	}
+	
+	FileAppend("c:\\trade.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"BarStatus==2");
+
+	If(GetGlobalVar(1)==0)
+    {
+		If(amp>iAmplitude*coffee)
+        {
+            If(Time>(0.14) or Time<(starttime/100))
+            {
+                Return;
+            }
+            if(isup>0 )
+            {
+                //If(MarketPosition==0 )
+				If(A_BuyPosition==0)
+                {
+					A_SendOrder(Enum_Buy,Enum_Entry,1,Q_AskPrice()+10); 
+                   // Buy(1,0);
+                }
+            }
+            else If(isup<0 )
+            {
+                //If(MarketPosition==0)
+				If(A_SellPosition==0)
+                {
+					A_SendOrder(Enum_Sell,Enum_Entry,1,Q_BidPrice()-10); 
+                  //  SellShort(1,0);
+                } 
+            }
+            SetGlobalVar(1,1);
+        }
+    }
+     	  
+   // If(MarketPosition==1) 
+    If(A_BuyPosition>0)
+    {
+        If(Close<EntryPrice*(1-lose/100) or Time>0.1455 or  Close>EntryPrice*(1+win/100))
+        {
+			//时间尚早，反向开仓
+			If(Time<reverse/100 and Close<EntryPrice*(1-lose/100) )//and GetGlobalVar(1)==1)
+			{
+				A_SendOrder(Enum_Sell,Enum_Exit,2*A_BuyPosition,Q_BidPrice-10);
+				//SellShort(1,0);
+				SetGlobalVar(1,2);
+
+			}
+			else //If(Time>reverse/100)
+			{
+				//Sell(Abs(CurrentContracts),0);
+				A_SendOrder(Enum_Sell,Enum_Exit,A_BuyPosition,Q_BidPrice-10);
+				SetGlobalVar(1,10);
+				FileAppend("c:\\trade.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"平仓");
+
+			}
+        }
+    }
+    //else if(MarketPosition==-1) 
+	else If(A_SellPosition>0)
+    {
+        If(Close>EntryPrice*(1+lose/100) or Time>0.1455 or Close<EntryPrice*(1-win/100))
+        {
+			//时间尚早，反向开仓
+			If(Time<reverse/100 and Close>EntryPrice*(1+lose/100) )//and GetGlobalVar(1)==1)
+			{
+				//Buy(1,0);
+				A_SendOrder(Enum_Buy,Enum_Exit,2*A_SellPosition,Q_AskPrice+10);
+				
+				SetGlobalVar(1,2);
+			}
+			else// If(Time>reverse/100)
+			{		
+				//BuyToCover(Abs(CurrentContracts),0);
+				A_SendOrder(Enum_Buy,Enum_Exit,A_SellPosition,Q_AskPrice+10);
+
+				SetGlobalVar(1,10);
+			}
+        }
+    }
+
+End
+
