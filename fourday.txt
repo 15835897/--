@@ -1,0 +1,163 @@
+//------------------------------------------------------------------------
+// 简称: fourday
+// 名称: fourday
+// 类别: 用户函数
+// 类型: 用户函数
+// 输出: 布尔型
+//------------------------------------------------------------------------
+
+Params
+	Numeric Num(10);
+Vars
+	Numeric inc(0);
+	Numeric avgfour(0); 
+	Numeric avprice(0);
+ 	Numeric state(0);
+ 	Numeric pow(0);
+ 	Numeric count(0);
+	Numeric profit(0);
+
+Begin
+	avgfour=Average(Close,3);
+	//avprice=AvgEntryPrice;
+	
+    If(/*Date!=Date[1] or */BarStatus==0)
+    {
+        SetGlobalVar(1,0); //inc
+		SetGlobalVar(2,0); //state
+		SetGlobalVar(3,0); //profit
+		Return;
+    }
+	
+	inc=GetGlobalVar(1);
+	inc=inc+1;
+	SetGlobalVar(1,inc);
+	
+	PlotNumeric("avgfour",avgfour);
+	//PlotNumeric("MA1",AverageFC(Close,4));
+ 
+	If(inc%3==0 and BarStatus==1) 
+	{ 
+		FileAppend("c:\\four.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+",inc:"+Text(inc)+",MarketPosition:"+Text(MarketPosition)+",CurrentContracts:"+Text(CurrentContracts));
+		 
+ 		FileAppend("c:\\four.log","close:"+Text(Close)+",avgfour:"+Text(avgfour)+",MarketPosition:"+Text(MarketPosition)+",state:"+Text(GetGlobalVar(2)));
+ 		FileAppend("c:\\four.log","profit:"+Text(GetGlobalVar(3)));
+
+		If(MarketPosition==0)
+		{
+			If(Close>avgfour)
+			{
+				Buy(1,0);
+				SetGlobalVar(2,1); //state
+			}
+			Else
+			{
+			
+				SellShort(1,0);
+				SetGlobalVar(2,1); //state
+			}
+		}
+		Else
+		{
+			If(MarketPosition==1) 
+			{
+				If(Close<avgfour)
+				{
+					profit=GetGlobalVar(3);
+					profit=profit+PositionProfit();
+					SetGlobalVar(3,profit);
+					//亏，反手
+					state=GetGlobalVar(2);
+					If(state<4)
+					{
+						//prifit=PositionProfit();
+
+						SellShort(1,0);
+						state=state+1;
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+						}
+						Else
+						{
+							SetGlobalVar(2,state);
+						}
+					}
+					Else
+					{
+						pow=state-3;
+						count = Power(2,pow);
+						
+						SellShort(count,0);
+						state=state+1;
+						
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+
+						}
+						Else
+						{ 
+							SetGlobalVar(2,state);
+						}
+					}
+				}
+			}  
+			Else If(MarketPosition==-1) 
+			{
+				//FileAppend("c:\\four.log","close:"+Text(Close)+",avgfour:"+Text(avgfour)+",MarketPosition:"+Text(MarketPosition)+",state:"+Text(GetGlobalVar(2)));
+
+				If(Close>avgfour)
+				{ 
+					profit=GetGlobalVar(3);
+					profit=profit+PositionProfit();
+					SetGlobalVar(3,profit);
+				
+					state=GetGlobalVar(2);
+					//If(state
+					//亏，反手
+					If(state<4)
+					{
+						Buy(1,0);
+						state=state+1;
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+						}
+						Else
+						{
+							SetGlobalVar(2,state);
+						}
+					}
+					Else
+					{
+						pow=state-3;
+						count = Power(2,pow);
+						Buy(count,0);
+						state=state+1;
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+						}
+						Else
+						{
+							SetGlobalVar(2,state);
+						}
+					}
+				}
+			}
+		}
+	}
+End
+
+//------------------------------------------------------------------------
+// 编译版本	GS2010.12.08
+// 用户版本	2015-03-03 13:13:07
+// 版权所有	q51394712
+// 更改声明	TradeBlazer Software保留对TradeBlazer平台
+//			每一版本的TrabeBlazer公式修改和重写的权利
+//------------------------------------------------------------------------
