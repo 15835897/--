@@ -18,7 +18,7 @@ Vars
 	Numeric profit(0);
 
 Begin
-	avgfour=Average(Close,3);
+	avgfour=Average(Close,4);
 	//avprice=AvgEntryPrice;
 	
     If(/*Date!=Date[1] or */BarStatus==0)
@@ -36,7 +36,7 @@ Begin
 	PlotNumeric("avgfour",avgfour);
 	//PlotNumeric("MA1",AverageFC(Close,4));
  
-	If(inc%3==0 and BarStatus==1) 
+	If(inc%4==0 and BarStatus==1) 
 	{ 
 		FileAppend("c:\\four.log",Text(Year)+"Äê"+Text(Month)+"ÔÂ"+Text(Day)+",inc:"+Text(inc)+",MarketPosition:"+Text(MarketPosition)+",CurrentContracts:"+Text(CurrentContracts));
 		 
@@ -84,10 +84,29 @@ Begin
 							SetGlobalVar(2,state);
 						}
 					}
-					Else
+					Else If(state<7)
 					{
 						pow=state-3;
 						count = Power(2,pow);
+						
+						SellShort(count,0);
+						state=state+1;
+						
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+
+						}
+						Else
+						{ 
+							SetGlobalVar(2,state);
+						}
+					}
+					Else
+					{
+						pow=3;
+						count = Power(2,pow) + state - 6;
 						
 						SellShort(count,0);
 						state=state+1;
@@ -132,10 +151,26 @@ Begin
 							SetGlobalVar(2,state);
 						}
 					}
-					Else
+					Else If(state<7)
 					{
 						pow=state-3;
 						count = Power(2,pow);
+						Buy(count,0);
+						state=state+1;
+						If(profit>0)
+						{
+							SetGlobalVar(2,0);
+							SetGlobalVar(3,0);
+						}
+						Else
+						{
+							SetGlobalVar(2,state);
+						}
+					}
+					Else
+					{
+						pow=3;
+						count = Power(2,pow) + state-6;
 						Buy(count,0);
 						state=state+1;
 						If(profit>0)
