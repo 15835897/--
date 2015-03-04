@@ -5,7 +5,7 @@ Params
 	Numeric coffee(0.3);  
 	Numeric reverse(10.06);//反仓截止时间
 	
-    Numeric stoptime(14); //终止开仓时间
+    Numeric stoptime(14);  //终止开仓时间
 	Numeric starttime(9.1); //开始开仓时间
 	//Numeric add(10.30);//加仓截止时间
 Vars
@@ -19,11 +19,9 @@ Vars
 	Numeric highprice(0);
     Numeric lowprice(0);
     Numeric count_tick(0);
-
+	
    // Numeric sellprice(0);
    // Numeric buyprice(0);
-	
- 
     Numeric isup(0); 
     NumericSeries iAmplitude;
     String avgAmplitude;  
@@ -43,11 +41,12 @@ Begin
     isup=closeprice-openprice;
 	amp=highprice-lowprice;	  
 	  
-	  
     If(Date!=Date[1] or BarStatus==0)
     {
         strKey = DateToString(Date[1]);
         SetGlobalVar(1,0);
+        SetGlobalVar(2,0);
+
 		Return;
     }Else
     {
@@ -71,7 +70,6 @@ Begin
         iAmplitude = iAmplitude[1]; 
     } 
 	
-	
 	PlotNumeric("amp", amp); 
     PlotNumeric("avg amp", iAmplitude);
 
@@ -79,19 +77,23 @@ Begin
 	{
 		Return;
 	}
+	
+	If(A_AccountID()=="")
+	{
+		FileAppend("c:\\trade.log","no accountid,assoate you account");
+		Return;
+	}
 
-	If(GetGlobalVar(1)==0)
+	If(GetGlobalVar(1)==0 and A_BuyPosition()==0 and A_SellPosition()==0 )
     {
 		If(amp>iAmplitude*coffee)  
         {
-		
-		//临时删除，以便测试
-		
+ 		    //临时删除，以便测试
             If(Time>(0.14) or Time<(starttime/100))
             {
                 Return;
             }
-		
+		 
             if(isup>0 )
             {
 				If(A_BuyPosition==0)
@@ -109,64 +111,72 @@ Begin
                 } 
             }
             SetGlobalVar(1,1);
+			SetGlobalVar(2,0);
+
         }
     }
-	
 	//计数延迟
 	
     count_tick=GetGlobalVar(2);
     count_tick=count_tick+1;
     SetGlobalVar(2,count_tick);
 	
-	If(count_tick<10)
+	If(count_tick<3)
 	{
 		Return;
 	}
-	FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"count_tick:"+Text(count_tick));
+	FileAppend("c:\\trade.log","count_tick:"+Text(count_tick));
+	
 
     If(A_BuyPosition()>0 )
     {
-		FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+"A_BuyPosition:"+Text(A_BuyPosition())+",A_BuyAvgPrice():"+Text(A_BuyAvgPrice));
-		FileAppend("c:\\trade.log","lose:"+Text(A_BuyAvgPrice*(1-lose/100))+",win:"+Text(A_BuyAvgPrice*(1+win/100)));
+		If(count_tick%20==0)
+		{
+			FileAppend("c:\\trade.log",Text(time)+" "+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+",A_BuyPosition:"+Text(A_BuyPosition())+",A_BuyAvgPrice():"+Text(A_BuyAvgPrice));
+			FileAppend("c:\\trade.log","lose:"+Text(A_BuyAvgPrice*(1-lose/100))+",win:"+Text(A_BuyAvgPrice*(1+win/100))+",profit:"+Text(A_ProfitLoss()));
+		}
+		
         If(Close<A_BuyAvgPrice*(1-lose/100) or Time>0.1455 or  Close>A_BuyAvgPrice*(1+win/100))
         {
 			//时间尚早，反向开仓
 			If(Time<reverse/100 and Close<A_BuyAvgPrice*(1-lose/100) )
 			{ 
-				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+",SellShort ...........");
 				A_SendOrder(Enum_Sell,Enum_Exit,A_BuyPosition,Q_BidPrice-10);
 				A_SendOrder(Enum_Sell,Enum_Entry,A_BuyPosition,Q_BidPrice-10);
-
+				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+",卖出反手");
 				SetGlobalVar(1,2);
 			}
 			else 
 			{
-				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+",Sell ...........");
+				//FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+",Sell ...........");
 				A_SendOrder(Enum_Sell,Enum_Exit,A_BuyPosition,Q_BidPrice-10);
 				SetGlobalVar(1,10);
-				FileAppend("c:\\trade.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"平仓");
+				FileAppend("c:\\trade.log",Text(Year)+"年"+Text(Month)+"月"+Text(Day)+"买入平仓");
 			}
 			SetGlobalVar(2,0);
         }
     } 
 	else If(A_SellPosition>0)
     {
-		FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+" A_SellPosition:"+Text(A_SellPosition())+",A_SellAvgPrice():"+Text(A_SellAvgPrice));
-		FileAppend("c:\\trade.log","lose:"+Text(A_SellAvgPrice*(1+lose/100))+",win:"+Text(A_SellAvgPrice*(1-win/100))+",win piont:"+Text(1-win/100));
+		If(count_tick%20==0)
+		{
+			FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+", A_SellPosition:"+Text(A_SellPosition())+",A_SellAvgPrice():"+Text(A_SellAvgPrice));
+			FileAppend("c:\\trade.log","lose:"+Text(A_SellAvgPrice*(1+lose/100))+",win:"+Text(A_SellAvgPrice*(1-win/100))+",win piont:"+Text(1-win/100)+",profit:"+Text(A_ProfitLoss()));
+		}
 		
         If(Close>A_SellAvgPrice*(1+lose/100) or Time>0.1455 or Close<A_SellAvgPrice*(1-win/100))
         {
 			//时间尚早，反向开仓
 			If(Time<reverse/100 and Close>A_SellAvgPrice*(1+lose/100) )//and GetGlobalVar(1)==1)
 			{
-				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+",buy ...........");
+				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+",buy ...........");
 				A_SendOrder(Enum_Buy,Enum_Exit,A_SellPosition,Q_AskPrice+10);
 				A_SendOrder(Enum_Buy,Enum_Entry,A_SellPosition,Q_AskPrice+10);
 				SetGlobalVar(1,2);
 			}
 			else
 			{		
-				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+"Close:"+Text(Close)+",BuyToCover ...........");
+				FileAppend("c:\\trade.log",Text(time)+"年"+Text(Month)+"月"+Text(Day)+",Close:"+Text(Close)+",BuyToCover ...........");
 				A_SendOrder(Enum_Buy,Enum_Exit,A_SellPosition(),Q_AskPrice+10);
 				SetGlobalVar(1,10);
 			}
